@@ -1,117 +1,205 @@
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.util.ArrayList;
-import java.util.InputMismatchException;
-import java.util.Scanner;
+import java.io.*;
+import java.util.*;
 
 public class Banking {
-    private static ArrayList<Account> accounts = new ArrayList<>();
+    private static final String ACCOUNTS_FILE = "accounts.dat";
+    private ArrayList<Account> accounts;
+    private int nextAccountNumber;
 
-    private static int accountCounter = 1001;
+    public Banking() {
+        this.accounts = new ArrayList<>();
+        this.nextAccountNumber = 1001;
+        loadAccountsFromFile();
+    }
 
-    public static void showAccountHolders(){
-        if(accounts.isEmpty()){
-            System.out.println("No accounts have been created");
-        }else{
-            System.out.println("List of account holders are:");
-            for(Account account : accounts){
-                System.out.println(account.getAccountHolder());
+    @SuppressWarnings("unchecked")
+    public void loadAccountsFromFile() {
+        File file = new File(ACCOUNTS_FILE);
+        if (!file.exists()) {
+            System.out.println("No saved accounts found. Starting fresh.");
+            return;
+        }
+
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
+            Object data = ois.readObject();
+            
+            if (data instanceof AccountData) {
+                AccountData accountData = (AccountData) data;
+                this.accounts = accountData.getAccounts();
+                this.nextAccountNumber = accountData.getNextAccountNumber();
+            } else if (data instanceof ArrayList<?>) {
+                this.accounts = (ArrayList<Account>) data;
+  
+                this.nextAccountNumber = accounts.stream()
+                    .mapToInt(Account::getAccountNumber)
+                    .max()
+                    .orElse(1000) + 1;
             }
+            System.out.println("Accounts loaded successfully.");
+        } catch (InvalidClassException e) {
+            System.out.println("Data format has changed. Creating new data file.");
+            file.delete();
+        } catch (IOException | ClassNotFoundException e) {
+            System.out.println("Error loading accounts: " + e.getMessage());
+
+            file.delete();
         }
     }
-   
-    public static void saveAccounts(){
-        try(ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("accounts.dat"))){
-            oos.writeObject(accounts);
-            System.out.println("Accounts have been saved successfully.");
+
+    public void saveAccounts() {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(ACCOUNTS_FILE))) {
+            AccountData data = new AccountData(accounts, nextAccountNumber);
+            oos.writeObject(data);
+            System.out.println("Accounts saved successfully.");
         } catch (IOException e) {
-            System.out.println("Error occurred while saving account." + e.getMessage());
+            System.err.println("Error saving accounts: " + e.getMessage());
+            System.err.println("Please ensure you have write permissions in this directory.");
         }
     }
 
-@SuppressWarnings("unchecked")
-public static void loadAccountsFromFile() {
-    try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("accounts.dat"))) {
-        accounts = (ArrayList<Account>) ois.readObject();
-        System.out.println("Accounts loaded successfully.");
-    } catch (FileNotFoundException e) {
-        System.out.println("No saved accounts found.");
-    } catch (IOException | ClassNotFoundException e) {
-        System.out.println("Error loading accounts: " + e.getMessage());
-    }
-}
-
-public static void createAccount(Scanner scan) {
-    System.out.print("Enter account holder name: ");
-    scan.nextLine();
-    String name = scan.nextLine();
-
-    while (true) {
+    public void createAccount(Scanner scan) {
         try {
-            if (name.matches(".*\\d.*")) {
-                throw new InputMismatchException("Account name should not contain numbers. Please try again.");
-            }
-            Account newAccount = new Account(name, accountCounter++);
+            System.out.print("Enter account holder name: ");
+            scan.nextLine();
+            String name = scan.nextLine().trim();
+
+            validateName(name);
+            Account newAccount = new Account(name, nextAccountNumber++);
             accounts.add(newAccount);
             System.out.println("Account created successfully! Your account number is: " + newAccount.getAccountNumber());
-            break;
-
-        } catch (InputMismatchException e) {
-            System.out.println(e.getMessage());
-            System.out.print("Enter account holder name: ");
-            name = scan.nextLine();
-        }
-    }
-}
-
-    public static void deposit(Scanner scan) {
-        System.out.print("Enter account number: ");
-        int accountNumber = scan.nextInt();
-        Account account = findAccount(accountNumber);
-        if (account != null) {
-            System.out.print("Enter amount to deposit: ");
-            double amount = scan.nextDouble();
-            account.deposit(amount);
-        } else {
-            System.out.println("Account not found!");
+            saveAccounts(); 
+        } catch (IllegalArgumentException e) {
+            System.out.println("Error: " + e.getMessage());
         }
     }
 
-    public static void withdraw(Scanner scan) {
-        System.out.print("Enter account number: ");
-        int accountNumber = scan.nextInt();
-        Account account = findAccount(accountNumber);
-        if (account != null) {
-            System.out.print("Enter amount to withdraw: ");
-            double amount = scan.nextDouble();
-            account.withdraw(amount);
-        } else {
-            System.out.println("Account not found!");
+    private void validateName(String name) {
+        if (name.isEmpty()) {
+            throw new IllegalArgumentException("Account name cannot be empty.");
+        }
+        if (!name.matches("^[a-zA-Z\\s]+$")) {
+            throw new IllegalArgumentException("Account name should only contain letters and spaces.");
+        }
+        if (name.length() > 50) {
+            throw new IllegalArgumentException("Account name is too long. Maximum 50 characters allowed.");
         }
     }
 
-    public static void viewBalance(Scanner scan) {
-        System.out.print("Enter account number: ");
-        int accountNumber = scan.nextInt();
-        Account account = findAccount(accountNumber);
-        if (account != null) {
-            System.out.println("Account Holder: " + account.getAccountHolder());
-            System.out.println("Current Balance: " + account.getBalance());
-        } else {
-            System.out.println("Account not found!");
+    public void deposit(Scanner scan) {
+        try {
+            Account account = findAndValidateAccount(scan);
+            if (account != null) {
+                double amount = getValidAmount(scan, "deposit");
+                if (amount > 0) {
+                    account.deposit(amount);
+                    saveAccounts(); 
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Error processing deposit: " + e.getMessage());
         }
     }
 
-    private static Account findAccount(int accountNumber) {
+    public void withdraw(Scanner scan) {
+        try {
+            Account account = findAndValidateAccount(scan);
+            if (account != null) {
+                double amount = getValidAmount(scan, "withdraw");
+                if (amount > 0) {
+                    account.withdraw(amount);
+                    saveAccounts(); 
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Error processing withdrawal: " + e.getMessage());
+        }
+    }
+
+    public void viewBalance(Scanner scan) {
+        try {
+            Account account = findAndValidateAccount(scan);
+            if (account != null) {
+                System.out.println("\nAccount Details:");
+                System.out.println("Account Number: " + account.getAccountNumber());
+                System.out.println("Account Holder: " + account.getAccountHolder());
+                System.out.printf("Current Balance: $%.2f%n", account.getBalance());
+            }
+        } catch (Exception e) {
+            System.out.println("Error viewing balance: " + e.getMessage());
+        }
+    }
+
+    public void showAccountHolders() {
+        if (accounts.isEmpty()) {
+            System.out.println("No accounts have been created.");
+            return;
+        }
+
+        System.out.println("\nList of account holders:");
+        System.out.println("------------------------");
         for (Account account : accounts) {
-            if (account.getAccountNumber() == accountNumber) {
+            System.out.printf("Account #%d: %s (Balance: $%.2f)%n", 
+                account.getAccountNumber(), 
+                account.getAccountHolder(),
+                account.getBalance());
+        }
+        System.out.println("------------------------");
+        System.out.println("Total accounts: " + accounts.size());
+    }
+
+    public void showTransactionHistory(Scanner scan) {
+        try {
+            Account account = findAndValidateAccount(scan);
+            if (account != null) {
+                account.showTransactionHistory();
+            }
+        } catch (Exception e) {
+            System.out.println("Error viewing transaction history: " + e.getMessage());
+        }
+    }
+
+    private Account findAndValidateAccount(Scanner scan) {
+        while (true) {
+            try {
+                System.out.print("Enter account number: ");
+                int accountNumber = scan.nextInt();
+                Account account = findAccount(accountNumber);
+                if (account == null) {
+                    throw new IllegalArgumentException("Account not found! Please check the account number.");
+                }
                 return account;
+            } catch (InputMismatchException e) {
+                System.out.println("Invalid account number format. Please enter a valid number.");
+                scan.next(); 
             }
         }
-        return null;
+    }
+
+    private double getValidAmount(Scanner scan, String operation) {
+        while (true) {
+            try {
+                System.out.printf("Enter amount to %s: $", operation);
+                double amount = scan.nextDouble();
+                if (amount <= 0) {
+                    throw new IllegalArgumentException("Amount must be greater than zero.");
+                }
+                if (amount > 1000000) {
+                    throw new IllegalArgumentException("Amount exceeds maximum transaction limit of $1,000,000.");
+                }
+                return amount;
+            } catch (InputMismatchException e) {
+                System.out.println("Invalid amount format. Please enter a valid number.");
+                scan.next(); 
+            } catch (IllegalArgumentException e) {
+                System.out.println(e.getMessage());
+            }
+        }
+    }
+
+    private Account findAccount(int accountNumber) {
+        return accounts.stream()
+            .filter(account -> account.getAccountNumber() == accountNumber)
+            .findFirst()
+            .orElse(null);
     }
 }
