@@ -1,4 +1,5 @@
-class Account {
+import java.io.Serializable;
+class Account implements Serializable {
     private String accountHolder;
     private int accountNumber;
     private double balance;
