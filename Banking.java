@@ -64,6 +64,12 @@ public class Banking {
             String name = scan.nextLine().trim();
 
             validateName(name);
+
+            if(isDuplicateName(name)){
+                System.out.println("An account with this name already exists. Please use another name.");
+                return;
+            }
+
             Account newAccount = new Account(name, nextAccountNumber++);
             accounts.add(newAccount);
             System.out.println("Account created successfully! Your account number is: " + newAccount.getAccountNumber());
@@ -71,6 +77,11 @@ public class Banking {
         } catch (IllegalArgumentException e) {
             System.out.println("Error: " + e.getMessage());
         }
+    }
+
+    private boolean isDuplicateName(String name){
+        return accounts.stream()
+        .anyMatch(account -> account.getAccountHolder().toLowerCase().equals(name.toLowerCase()));
     }
 
     private void validateName(String name) {
@@ -201,5 +212,36 @@ public class Banking {
             .filter(account -> account.getAccountNumber() == accountNumber)
             .findFirst()
             .orElse(null);
+    }
+
+    public void deleteAccount(Scanner scan){
+        try {
+            Account account = findAndValidateAccount(scan);
+            if(account != null) {
+                System.out.println("\nAccount details to be deleted.");
+                System.out.println("Account number: " + account.getAccountNumber());
+                System.out.println("Account holder: " + account.getAccountHolder());
+                System.out.printf("Current Balance: $%.2f%n", account.getBalance());
+
+                if(account.getBalance() > 0){
+                    System.out.println("Cannot delete account with positive balance.");
+                    return;
+                }
+
+                System.out.println("Are you sure you want to delete this account (yes/no)");
+                scan.nextLine();
+                String confirmation = scan.nextLine().trim().toLowerCase();
+
+                if(confirmation.equals("yes")) {
+                    accounts.remove(account);
+                    System.out.println("Account removed successfully.");
+                    saveAccounts();
+                }else{
+                    System.out.println("Account deletion cancelled successfully");
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Error deleting account." + e.getMessage());
+        }
     }
 }
