@@ -6,6 +6,11 @@ public class BankingApp {
         Scanner scan = new Scanner(System.in);
         Banking banking = new Banking();
 
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("Saving accounts before shutdown...");
+            Banking.saveAccounts(); 
+        }));
+
         try {
             while (true) {
                 System.out.println("\nWhat do you want to do?");
