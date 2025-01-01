@@ -29,7 +29,6 @@ public class Banking {
                 this.nextAccountNumber = accountData.getNextAccountNumber();
             } else if (data instanceof ArrayList<?>) {
                 this.accounts = (ArrayList<Account>) data;
-  
                 this.nextAccountNumber = accounts.stream()
                     .mapToInt(Account::getAccountNumber)
                     .max()
@@ -41,7 +40,6 @@ public class Banking {
             file.delete();
         } catch (IOException | ClassNotFoundException e) {
             System.out.println("Error loading accounts: " + e.getMessage());
-
             file.delete();
         }
     }
@@ -65,7 +63,7 @@ public class Banking {
 
             validateName(name);
 
-            if(isDuplicateName(name)){
+            if (isDuplicateName(name)) {
                 System.out.println("An account with this name already exists. Please use another name.");
                 return;
             }
@@ -79,9 +77,9 @@ public class Banking {
         }
     }
 
-    private boolean isDuplicateName(String name){
+    private boolean isDuplicateName(String name) {
         return accounts.stream()
-        .anyMatch(account -> account.getAccountHolder().toLowerCase().equals(name.toLowerCase()));
+            .anyMatch(account -> account.getAccountHolder().equalsIgnoreCase(name));
     }
 
     private void validateName(String name) {
@@ -207,23 +205,16 @@ public class Banking {
         }
     }
 
-    private Account findAccount(int accountNumber) {
-        return accounts.stream()
-            .filter(account -> account.getAccountNumber() == accountNumber)
-            .findFirst()
-            .orElse(null);
-    }
-
-    public void deleteAccount(Scanner scan){
+    public void deleteAccount(Scanner scan) {
         try {
             Account account = findAndValidateAccount(scan);
-            if(account != null) {
+            if (account != null) {
                 System.out.println("\nAccount details to be deleted.");
                 System.out.println("Account number: " + account.getAccountNumber());
                 System.out.println("Account holder: " + account.getAccountHolder());
                 System.out.printf("Current Balance: $%.2f%n", account.getBalance());
 
-                if(account.getBalance() > 0){
+                if (account.getBalance() > 0) {
                     System.out.println("Cannot delete account with positive balance.");
                     return;
                 }
@@ -232,16 +223,55 @@ public class Banking {
                 scan.nextLine();
                 String confirmation = scan.nextLine().trim().toLowerCase();
 
-                if(confirmation.equals("yes")) {
+                if (confirmation.equals("yes")) {
                     accounts.remove(account);
                     System.out.println("Account removed successfully.");
                     saveAccounts();
-                }else{
+                } else {
                     System.out.println("Account deletion cancelled successfully");
                 }
             }
         } catch (Exception e) {
-            System.out.println("Error deleting account." + e.getMessage());
+            System.out.println("Error deleting account. " + e.getMessage());
+        }
+    }
+
+    public Account findAccount(int accountNumber) {
+        return accounts.stream()
+                .filter(account -> account.getAccountNumber() == accountNumber)
+                .findFirst()
+                .orElse(null);
+    }
+
+    public void transfer(Scanner scan) {
+        System.out.print("Enter source account number: ");
+        int sourceAccountNumber = scan.nextInt();
+        Account sourceAccount = findAccount(sourceAccountNumber); 
+    
+        if (sourceAccount != null) {
+            System.out.print("Enter destination account number: ");
+            int destAccountNumber = scan.nextInt();
+            Account destAccount = findAccount(destAccountNumber);
+    
+            if (destAccount != null) {
+                double amount = getValidAmount(scan, "transfer");
+    
+                if (sourceAccount.getBalance() >= amount) {
+                    sourceAccount.withdraw(amount);
+                    destAccount.deposit(amount);
+
+                    sourceAccount.addTransaction("Transferred " + amount + " to account " + destAccountNumber);
+                    destAccount.addTransaction("Received " + amount + " from account " + sourceAccountNumber);
+                    System.out.println("Transfer successful.");
+                } else {
+                    System.out.println("Insufficient balance.");
+                }
+            } else {
+                System.out.println("Destination account not found.");
+            }
+        } else {
+            System.out.println("Source account not found.");
         }
     }
 }
+

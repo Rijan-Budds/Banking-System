@@ -57,7 +57,7 @@ class Account implements Serializable {
         }
     }
 
-    private void addTransaction(String transaction) {
+    public void addTransaction(String transaction) {
         String timestamp = LocalDateTime.now().format(formatter);
         transactionHistory.add(String.format("[%s] %s", timestamp, transaction));
     }

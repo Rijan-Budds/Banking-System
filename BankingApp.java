@@ -20,7 +20,8 @@ public class BankingApp {
                 System.out.println("5. Show accounts");
                 System.out.println("6. View transactions");
                 System.out.println("7. Delete account.");
-                System.out.println("8. Exit");
+                System.out.println("8. Transfer balance.");
+                System.out.println("9. Exit");
                 System.out.print("Enter your choice: ");
                 
                 int choice = getValidIntInput(scan);
@@ -47,6 +48,9 @@ public class BankingApp {
                         banking.deleteAccount(scan);
                         break;
                     case 8:
+                        banking.transfer(scan);
+                        break;
+                    case 9:
                         System.out.println("Thank you for using the Banking System!");
                         banking.saveAccounts();
                         return;
