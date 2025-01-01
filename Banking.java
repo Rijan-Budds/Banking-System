@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.InputMismatchException;
 import java.util.Scanner;
 
 public class Banking {
@@ -33,16 +34,28 @@ public static void loadAccountsFromFile() {
     }
 }
 
+public static void createAccount(Scanner scan) {
+    System.out.print("Enter account holder name: ");
+    scan.nextLine();
+    String name = scan.nextLine();
 
+    while (true) {
+        try {
+            if (name.matches(".*\\d.*")) {
+                throw new InputMismatchException("Account name should not contain numbers. Please try again.");
+            }
+            Account newAccount = new Account(name, accountCounter++);
+            accounts.add(newAccount);
+            System.out.println("Account created successfully! Your account number is: " + newAccount.getAccountNumber());
+            break;
 
-    public static void createAccount(Scanner scan) {
-        System.out.print("Enter account holder name: ");
-        scan.nextLine(); 
-        String name = scan.nextLine();
-        Account newAccount = new Account(name, accountCounter++);
-        accounts.add(newAccount);
-        System.out.println("Account created successfully! Your account number is: " + newAccount.getAccountNumber());
+        } catch (InputMismatchException e) {
+            System.out.println(e.getMessage());
+            System.out.print("Enter account holder name: ");
+            name = scan.nextLine();
+        }
     }
+}
 
     public static void deposit(Scanner scan) {
         System.out.print("Enter account number: ");
