@@ -18,7 +18,8 @@ public class BankingApp {
                 System.out.println("2. Deposit into account.");
                 System.out.println("3. Withdraw from account.");
                 System.out.println("4. View balance.");
-                System.out.println("5. Exit.");
+                System.out.println("5. Show accounts.");
+                System.out.println("6. Exit");
                 System.out.print("Enter your choice: ");
                 int choice = getValidIntInput(scan);
                 switch (choice) {
@@ -35,6 +36,9 @@ public class BankingApp {
                         banking.viewBalance(scan);
                         break;
                     case 5:
+                        banking.showAccountHolders();
+                        break;
+                    case 6:
                         System.out.println("Thank you for using the Banking System!");
                         Banking.saveAccounts(); 
                         return; 

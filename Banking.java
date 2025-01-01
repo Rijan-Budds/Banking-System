@@ -13,6 +13,17 @@ public class Banking {
 
     private static int accountCounter = 1001;
 
+    public static void showAccountHolders(){
+        if(accounts.isEmpty()){
+            System.out.println("No accounts have been created");
+        }else{
+            System.out.println("List of account holders are:");
+            for(Account account : accounts){
+                System.out.println(account.getAccountHolder());
+            }
+        }
+    }
+   
     public static void saveAccounts(){
         try(ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("accounts.dat"))){
             oos.writeObject(accounts);
