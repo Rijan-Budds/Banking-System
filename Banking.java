@@ -1,9 +1,39 @@
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Scanner;
 
 public class Banking {
     private static ArrayList<Account> accounts = new ArrayList<>();
+
     private static int accountCounter = 1001;
+
+    public static void saveAccounts(){
+        try(ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("accounts.dat"))){
+            oos.writeObject(accounts);
+            System.out.println("Accounts have been saved successfully.");
+        } catch (IOException e) {
+            System.out.println("Error occurred while saving account." + e.getMessage());
+        }
+    }
+
+@SuppressWarnings("unchecked")
+public static void loadAccountsFromFile() {
+    try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("accounts.dat"))) {
+        accounts = (ArrayList<Account>) ois.readObject();
+        System.out.println("Accounts loaded successfully.");
+    } catch (FileNotFoundException e) {
+        System.out.println("No saved accounts found.");
+    } catch (IOException | ClassNotFoundException e) {
+        System.out.println("Error loading accounts: " + e.getMessage());
+    }
+}
+
+
 
     public static void createAccount(Scanner scan) {
         System.out.print("Enter account holder name: ");

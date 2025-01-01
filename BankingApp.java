@@ -2,6 +2,7 @@ import java.util.Scanner;
 
 public class BankingApp {
     public static void main(String[] args) {
+        Banking.loadAccountsFromFile();
         Scanner scan = new Scanner(System.in);
         Banking banking = new Banking();
 
@@ -30,6 +31,7 @@ public class BankingApp {
                         break;
                     case 5:
                         System.out.println("Thank you for using the Banking System!");
+                        Banking.saveAccounts(); 
                         return; 
                     default:
                         System.out.println("Invalid choice! Please try again.");

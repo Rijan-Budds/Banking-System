@@ -2,6 +2,7 @@ class Account {
     private String accountHolder;
     private int accountNumber;
     private double balance;
+    private static final long serialVersionUID = 1L;
 
     public Account(String accountHolder, int accountNumber) {
         this.accountHolder = accountHolder;
