@@ -10,6 +10,8 @@ class Account implements Serializable {
     private int accountNumber;
     private double balance;
     private List<String> transactionHistory;
+    private double loanBalance = 0;
+
     private static final DateTimeFormatter formatter = 
         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -31,6 +33,10 @@ class Account implements Serializable {
 
     public double getBalance() {
         return balance;
+    }
+
+    public double getLoanBalance(){
+        return loanBalance;
     }
 
     public void deposit(double amount) {
@@ -75,4 +81,24 @@ class Account implements Serializable {
             }
         }
     }
+
+    public void loan(double amount){
+        balance += amount;
+        loanBalance += amount;
+        transactionHistory.add("Loan granted: $" + amount);
+    }
+
+    public void repayLoan(double amount) {
+        if (amount > loanBalance) {
+            throw new IllegalArgumentException("Repayment amount exceeds the loan balance.");
+        }
+        balance -= amount;
+        loanBalance -= amount;
+        addTransaction("Loan repayment: $" + amount);
+    }
+
+    public void setLoanBalance(double loanBalance){
+        this.loanBalance = loanBalance;
+    }
+
 }

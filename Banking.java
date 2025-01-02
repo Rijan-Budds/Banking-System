@@ -147,10 +147,11 @@ public class Banking {
         System.out.println("\nList of account holders:");
         System.out.println("------------------------");
         for (Account account : accounts) {
-            System.out.printf("Account #%d: %s (Balance: $%.2f)%n", 
+            System.out.printf("Account #%d: %s (Balance: $%.2f, Loan Balance: $%.2f)%n", 
                 account.getAccountNumber(), 
                 account.getAccountHolder(),
-                account.getBalance());
+                account.getBalance(),
+                account.getLoanBalance());
         }
         System.out.println("------------------------");
         System.out.println("Total accounts: " + accounts.size());
@@ -273,5 +274,70 @@ public class Banking {
             System.out.println("Source account not found.");
         }
     }
+
+    public void loan(Scanner scan) {
+        try {
+            System.out.print("Enter account number: ");
+            int accountNumber = scan.nextInt();
+            scan.nextLine(); 
+            
+            System.out.print("Enter loan amount: ");
+            double loanAmount = scan.nextDouble();
+            scan.nextLine(); 
+    
+            if (loanAmount <= 0) {
+                System.out.println("Loan amount must be greater than zero.");
+                return;
+            }
+    
+            Account account = findAccount(accountNumber);
+            if (account != null) {
+                account.loan(loanAmount); 
+                System.out.println("Loan granted successfully.");
+                saveAccounts(); 
+            } else {
+                System.err.println("Account not found.");
+            }
+        } catch (InputMismatchException e) {
+            System.out.println("Invalid input. Please enter valid numbers.");
+            scan.next();
+        } catch (Exception e) {
+            System.out.println("An error occurred: " + e.getMessage());
+        }
+    }
+
+    public void loanRepay(Scanner scan){
+        try {
+            System.out.print("Enter account number: ");
+            int accountNumber = scan.nextInt();
+            Account account = findAccount(accountNumber);
+
+            if (account!= null) {
+                System.out.print("Enter repayment amount: ");
+                double repaymentAmount = scan.nextDouble();
+
+                if (repaymentAmount <= 0) {
+                    System.out.println("Repayment amount must be greater than zero.");
+                    return;
+                }
+                if(repaymentAmount > account.getLoanBalance()){
+                    System.out.println("Repayment amount exceeds the outstanding loan balance.");
+                    return;
+                }
+
+                account.repayLoan(repaymentAmount);
+                System.out.println("Repayment successful.");
+                saveAccounts(); 
+            } else {
+                System.err.println("Account not found.");
+            }
+        } catch (InputMismatchException e) {
+            System.out.println("Invalid input. Please enter valid numbers.");
+            scan.next();
+        } catch (Exception e) {
+            System.out.println("An error occurred: " + e.getMessage());
+        }
+    }
+    
 }
 
